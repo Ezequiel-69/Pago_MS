@@ -10,6 +10,8 @@ import com.EcoMarketSPA.pago.enums.MetodoPago;
 import com.EcoMarketSPA.pago.model.Pago;
 import com.EcoMarketSPA.pago.repository.PagoRepository;
 
+import jakarta.persistence.EntityNotFoundException;
+
 @Service
 public class PagoService {
 
@@ -56,10 +58,33 @@ public class PagoService {
                 .build();
     }
 
+    public PagoResponseDTO confirmarPagoEfectivo(long idPedido){
 
+        Pago pago  = pagoRepository.findByIdPedido(idPedido)
+            .orElseThrow(() -> new EntityNotFoundException("Pago no encontrado para el pedido: " + idPedido));
 
-    
+            if (!pago.getMetodoPago().equals(MetodoPago.EFECTIVO)) {
 
+                throw new IllegalArgumentException("Pago no encontrado o no es de tipo EFECTIVO para el pedido: " + idPedido);
+                
+            }
 
+            if (!pago.getEstado().equals(EstadoPago.PENDIENTE)) {
+
+                throw new IllegalArgumentException("El pago no esta pendiente");
+                
+            }
+
+            pago.setEstado(EstadoPago.CONFIRMADO);
+            pagoRepository.save(pago);
+
+            return PagoResponseDTO.builder()
+                .idPedido(pago.getIdPedido())
+                .estado(pago.getEstado().name())
+                .metodoPago(pago.getMetodoPago().name())
+                .pagoExitoso(true)
+                .build();
+
+    }
 }
 
